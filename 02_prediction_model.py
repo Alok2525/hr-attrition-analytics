@@ -7,6 +7,9 @@ Run    : python 02_prediction_model.py
 Note   : Convert to a Jupyter Notebook with markdown commentary for GitHub.
 """
 
+import os
+from urllib.parse import quote_plus
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -50,8 +53,17 @@ print(df.groupby("OverTime")["Attrition"].apply(lambda s: (s == "Yes").mean().ro
 
 # ----------------------------------------------------------------------
 # 3. LOAD INTO MYSQL (for SQL analysis file)
+#    Credentials come from the environment — never hardcode them here.
+#    export MYSQL_PASSWORD='...'   before running.
 # ----------------------------------------------------------------------
-engine = create_engine("mysql+pymysql://root:yourpassword@localhost:3306/hr_analytics")
+DB_USER = os.environ.get("MYSQL_USER", "root")
+DB_PASSWORD = os.environ.get("MYSQL_PASSWORD")
+if not DB_PASSWORD:
+    raise SystemExit("Set MYSQL_PASSWORD first:  export MYSQL_PASSWORD='...'")
+DB_HOST = os.environ.get("MYSQL_HOST", "localhost")
+
+engine = create_engine(
+    f"mysql+pymysql://{DB_USER}:{quote_plus(DB_PASSWORD)}@{DB_HOST}:3306/hr_analytics")
 sql_df = df.copy()
 sql_df.columns = (sql_df.columns
                   .str.replace(r"(?<!^)(?=[A-Z])", "_", regex=True)
