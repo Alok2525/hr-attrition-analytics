@@ -15,7 +15,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sqlalchemy import create_engine
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import (
+    train_test_split, cross_val_predict, StratifiedKFold)
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, roc_auc_score, confusion_matrix
 
@@ -110,10 +111,26 @@ plt.title("Top 10 Attrition Drivers (Feature Importance)")
 plt.tight_layout(); plt.savefig("outputs/feature_importance.png"); plt.close()
 
 # ----------------------------------------------------------------------
-# 7. EXPORT RISK SCORES FOR POWER BI
+# 7. EXPORT RISK SCORES
 #    Score ALL current employees (Attrition = No) — the actionable list.
+#
+#    Scored out-of-fold, not with the model above. Reusing `model` here would
+#    score the 80% it was trained on in-sample: it has memorised their
+#    Attrition = No label and pushes their probability down, so they never
+#    cross a risk threshold. Measured on this dataset, that put all 10
+#    "high-risk" employees inside the 247-row test slice and none in the 986
+#    trained-on rows — a ranking of who landed in which split, not of who is
+#    at risk. cross_val_predict gives every employee a prediction from a fold
+#    that never saw them, so the scores are comparable across the population.
 # ----------------------------------------------------------------------
-df["attrition_probability"] = model.predict_proba(X)[:, 1].round(3)
+oof_proba = cross_val_predict(
+    RandomForestClassifier(n_estimators=300, max_depth=10,
+                           class_weight="balanced", random_state=42),
+    X, y,
+    cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=42),
+    method="predict_proba",
+)[:, 1]
+df["attrition_probability"] = oof_proba.round(3)
 
 risk_out = df.loc[df["Attrition"] == "No",
                   ["EmployeeNumber", "Department", "JobRole", "OverTime",
@@ -124,6 +141,7 @@ risk_out["risk_band"] = pd.cut(risk_out["attrition_probability"],
 risk_out = risk_out.sort_values("attrition_probability", ascending=False)
 risk_out.to_csv("outputs/employee_risk_scores.csv", index=False)
 
-print(f"\n✅ Exported {len(risk_out)} employee risk scores "
-      f"({(risk_out['risk_band'] == 'High').sum()} high-risk) "
-      "→ outputs/employee_risk_scores.csv (use in Power BI page 3)")
+print(f"\n✅ Exported {len(risk_out)} employee risk scores, scored out-of-fold "
+      f"({(risk_out['risk_band'] == 'High').sum()} high-risk, "
+      f"{(risk_out['risk_band'] == 'Medium').sum()} medium) "
+      "→ outputs/employee_risk_scores.csv")
