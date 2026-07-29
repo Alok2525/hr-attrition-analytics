@@ -8,5 +8,6 @@ Place this file in this `data/` folder:
 
 - WA_Fn-UseC_-HR-Employee-Attrition.csv
 
-The script writes model output for Power BI to `../outputs/employee_risk_scores.csv`.
-Raw and generated CSVs are kept out of version control by `.gitignore`.
+`02_prediction_model.py` writes its model output to `../outputs/` — the per-employee
+risk scores the dashboard's third page reads, and the salary-hike simulation behind
+its what-if. Raw and generated CSVs are kept out of version control by `.gitignore`.

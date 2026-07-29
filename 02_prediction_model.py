@@ -1,10 +1,10 @@
 """
 HR Attrition — EDA + Prediction Model
 Author : Alok Kumar Ojha
-Purpose: Explore attrition drivers, train a Random Forest classifier,
-         and export per-employee risk scores for the Power BI dashboard.
+Purpose: Explore attrition drivers, train a Random Forest classifier, and
+         export per-employee risk scores plus a salary-hike simulation for the
+         dashboard.
 Run    : python 02_prediction_model.py
-Note   : Convert to a Jupyter Notebook with markdown commentary for GitHub.
 """
 
 import os
@@ -145,3 +145,63 @@ print(f"\n✅ Exported {len(risk_out)} employee risk scores, scored out-of-fold 
       f"({(risk_out['risk_band'] == 'High').sum()} high-risk, "
       f"{(risk_out['risk_band'] == 'Medium').sum()} medium) "
       "→ outputs/employee_risk_scores.csv")
+
+# ----------------------------------------------------------------------
+# 8. WHAT-IF: SALARY-HIKE SIMULATION
+#    The question the dashboard asks: if we raised everyone's pay by H%,
+#    what would the model predict then?
+#
+#    This is a real re-prediction, not a linear approximation. The intervention
+#    is a change to the *input* (MonthlyIncome), so the models are fitted once
+#    on the observed data and then asked about the counterfactual. Refitting on
+#    hiked salaries would answer a different question — what a world where
+#    everyone already earned more looks like — and would let the target leak
+#    back into the model through the very feature being changed.
+#
+#    Each employee is still scored by a fold that never saw them, so the H=0
+#    column must reproduce section 7's out-of-fold scores exactly. That
+#    equality is asserted below rather than assumed.
+#
+#    Only MonthlyIncome moves. PercentSalaryHike is last year's raise, a
+#    different quantity; DailyRate/HourlyRate/MonthlyRate are random filler in
+#    this dataset (see notes/key-numbers.md) and carry no salary signal.
+# ----------------------------------------------------------------------
+HIKE_LEVELS = [0, 5, 10, 15, 20, 25, 30]
+
+folds = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+sim = pd.DataFrame(index=X.index, columns=HIKE_LEVELS, dtype=float)
+
+for train_idx, test_idx in folds.split(X, y):
+    fold_model = RandomForestClassifier(
+        n_estimators=300, max_depth=10,
+        class_weight="balanced", random_state=42
+    ).fit(X.iloc[train_idx], y.iloc[train_idx])
+
+    held_out = X.iloc[test_idx]
+    for hike in HIKE_LEVELS:
+        counterfactual = held_out.copy()
+        counterfactual["MonthlyIncome"] = counterfactual["MonthlyIncome"] * (1 + hike / 100)
+        sim.loc[held_out.index, hike] = fold_model.predict_proba(counterfactual)[:, 1]
+
+# The H=0 column and section 7's scores come from the same folds and the same
+# seed, so they must agree. If they ever stop agreeing, the two are no longer
+# describing the same model and the simulation is meaningless.
+assert np.allclose(sim[0], oof_proba), "H=0 does not reproduce the out-of-fold scores"
+
+sim_current = sim.loc[df["Attrition"] == "No"].round(3)
+sim_current.insert(0, "employee_number",
+                   df.loc[sim_current.index, "EmployeeNumber"].values)
+sim_out = (sim_current
+           .melt(id_vars="employee_number",
+                 var_name="hike_pct", value_name="attrition_probability")
+           .sort_values(["employee_number", "hike_pct"]))
+sim_out.to_csv("outputs/hike_simulation.csv", index=False)
+
+baseline = sim.loc[df["Attrition"] == "No", 0]
+topmost = sim.loc[df["Attrition"] == "No", HIKE_LEVELS[-1]]
+print(f"\n✅ Simulated {len(HIKE_LEVELS)} salary-hike levels for {len(baseline):,} "
+      f"current employees → outputs/hike_simulation.csv")
+print(f"   Mean predicted risk: {baseline.mean():.3f} at +0%  →  "
+      f"{topmost.mean():.3f} at +{HIKE_LEVELS[-1]}%")
+print(f"   High risk (p > 0.6): {(baseline > 0.6).sum()} at +0%  →  "
+      f"{(topmost > 0.6).sum()} at +{HIKE_LEVELS[-1]}%")
