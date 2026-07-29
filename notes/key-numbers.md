@@ -150,6 +150,66 @@ honest score and the high-risk list more than doubled."*
 | Q6 tenure buckets sum | 342+434+448+246 = 1,470 ✅ |
 | Q9 age groups sum | 326+622+349+173 = 1,470 ✅ |
 
+## Salary-hike simulation
+
+Mean predicted attrition risk, by hike level. Every employee is re-scored by
+the same held-out fold model that produced their baseline score, with only
+`MonthlyIncome` changed — so **+0% reproduces the exported risk scores exactly**,
+and `02_prediction_model.py` asserts that rather than trusting it.
+
+| Scope | n | +0% | +5% | +10% | +15% | +20% | +25% | +30% |
+|---|---|---|---|---|---|---|---|---|
+| All current employees | 1,233 | 0.255 | 0.254 | 0.253 | 0.252 | 0.251 | 0.250 | **0.249** |
+| Bottom income quartile (≤ 3,211) | 309 | 0.352 | 0.346 | 0.341 | 0.337 | 0.332 | 0.328 | **0.325** |
+| Already high risk | 22 | 0.669 | 0.661 | 0.657 | 0.652 | 0.647 | 0.641 | **0.638** |
+
+High-risk count (p > 0.6) at the same levels:
+
+| Scope | +0% | +5% | +10% | +15% | +20% | +25% | +30% |
+|---|---|---|---|---|---|---|---|
+| All current employees | 22 | 21 | 21 | 21 | 20 | 18 | **18** |
+| Bottom income quartile | 20 | 19 | 19 | 18 | 17 | 15 | **15** |
+| Already high risk | 22 | 20 | 21 | 19 | 18 | 16 | **16** |
+
+**The finding is that the intervention barely works, and targeting matters more
+than size.** A blanket +30% raise moves mean risk 0.255 → 0.249, 0.65 points
+across the whole payroll. The same raise aimed only at the bottom income
+quartile moves 0.352 → 0.325 — **4.3× the effect for a quarter of the cost**.
+
+⚠️ **Direction is not uniform.** At +30%, measured per employee:
+
+| | Employees |
+|---|---|
+| Predicted risk falls | 710 |
+| Unchanged (±0.001) | 41 |
+| **Predicted risk rises** | **482** |
+
+Largest single drop −0.140, largest single rise +0.091. Income is not monotonic
+in isolation — the model has learned that well-paid leavers are a different
+population: senior, more marketable, leaving for reasons a raise does not
+address.
+
+⚠️ **The honest limit.** Raising `MonthlyIncome` alone moves an employee into a
+region of feature space the model never observed, because income is correlated
+with `JobLevel`, `TotalWorkingYears` and `JobRole`. A Sales Representative on a
+director's salary is not a person in the training data. This is a directional
+sensitivity analysis against a real model, not a causal estimate of what a raise
+would do.
+
+**Why the fold models are not refitted on the raised salaries.** The
+intervention changes an input, so the model must be held fixed and asked about
+the counterfactual. Refitting would answer a different question — what a world
+where everyone already earned more looks like — and would let the target leak
+back through the very feature being changed.
+
+**Interview answer:** *"I built the what-if properly, and it told me the
+intervention mostly doesn't work. A 30% raise across the board moves predicted
+risk by two-thirds of a point. Targeted at the bottom quartile it does four
+times as much for a quarter of the cost — and 482 of 1,233 employees actually
+score higher, because the model has learned that well-paid leavers leave for
+different reasons. A linear approximation would have hidden all of that behind a
+line that only ever slopes down."*
+
 ### Notes on reading these
 
 - Q10 excludes promotion-gap groups with fewer than 20 employees (`HAVING
