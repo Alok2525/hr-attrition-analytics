@@ -12,7 +12,7 @@ answer and tagged with the SQL file's Q-number.
 Two sources, and the split is deliberate:
 
     MySQL  hr_analytics.employees        all 1,470 employees, snake_case
-    CSV    outputs/employee_risk_scores  1,233 current employees, CamelCase
+    CSV    outputs/employee_risk_scores  1,233 current employees, snake_case
     CSV    outputs/hike_simulation       the same 1,233 at 7 hike levels
 
 The model outputs stay in CSV because they are model artifacts, not source
