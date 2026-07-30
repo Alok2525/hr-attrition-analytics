@@ -139,6 +139,14 @@ risk_out["risk_band"] = pd.cut(risk_out["attrition_probability"],
                                bins=[0, 0.3, 0.6, 1.0],
                                labels=["Low", "Medium", "High"])
 risk_out = risk_out.sort_values("attrition_probability", ascending=False)
+
+# Export snake_case, matching the MySQL employees table and hike_simulation.csv.
+# The six selected columns come straight from the source DataFrame and were
+# CamelCase; a consumer joining on EmployeeNumber vs employee_number matches
+# nothing and fails silently — Power BI renders an empty table, no error.
+risk_out.columns = (risk_out.columns
+                    .str.replace(r"(?<!^)(?=[A-Z])", "_", regex=True)
+                    .str.lower())
 risk_out.to_csv("outputs/employee_risk_scores.csv", index=False)
 
 print(f"\n✅ Exported {len(risk_out)} employee risk scores, scored out-of-fold "
