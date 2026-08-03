@@ -1,0 +1,135 @@
+table _Measures
+	lineageTag: 9e5c161d-1684-5793-9307-967801829747
+
+	measure Headcount = COUNTROWS ( employees )
+		formatString: #,##0
+		lineageTag: 4f86aeed-12a3-5818-8e04-9ce3ec1a5ad1
+
+	measure Leavers = CALCULATE ( COUNTROWS ( employees ), employees[attrition] = "Yes" )
+		formatString: #,##0
+		lineageTag: cef709ce-2be9-5846-a5e2-10ca12b6b82f
+
+	measure 'Attrition %' = DIVIDE ( [Leavers], [Headcount] )
+		formatString: 0.00%
+		lineageTag: 7956df35-d87e-55b7-af7a-f36210694cab
+
+	measure Retained = [Headcount] - [Leavers]
+		formatString: #,##0
+		lineageTag: 272753c8-dc24-5f05-bf8d-dbbe258fc60d
+
+	measure 'Avg Monthly Income' = AVERAGE ( employees[monthly_income] )
+		formatString: #,##0
+		lineageTag: 228e5a1d-54d5-57e6-9d5f-70bc19916d50
+
+	measure 'Avg Tenure' = AVERAGE ( employees[years_at_company] )
+		formatString: 0.0
+		lineageTag: 6fea625e-9cf1-55fa-92b2-820ef1fffc78
+
+	measure 'Avg Age' = AVERAGE ( employees[age] )
+		formatString: 0.0
+		lineageTag: 9b30a876-cd9f-5acc-8bc8-1b6d56379bdf
+
+	measure 'Attrition % - Overtime' = CALCULATE ( [Attrition %], employees[over_time] = "Yes" )
+		formatString: 0.00%
+		lineageTag: f7c5a939-b5eb-5006-bfe5-ed90572d434f
+
+	measure 'Attrition % - No Overtime' = CALCULATE ( [Attrition %], employees[over_time] = "No" )
+		formatString: 0.00%
+		lineageTag: a75656fe-2570-5e8a-b5d3-9eb8a8a89819
+
+	measure 'Overtime Risk Multiple' = DIVIDE ( [Attrition % - Overtime], [Attrition % - No Overtime] )
+		formatString: 0.00
+		lineageTag: b911f6fd-808a-5c33-b3e0-3407804fac72
+
+	measure 'Employees Scored' = COUNTROWS ( risk_scores )
+		formatString: #,##0
+		lineageTag: 6e6a1278-d49b-52cd-8cc2-48030c5a3758
+
+	measure 'High Risk Count' = CALCULATE ( COUNTROWS ( risk_scores ), risk_scores[risk_band] = "High" )
+		formatString: 0
+		lineageTag: 6f02e7c4-9b57-52aa-999e-b0ff05d27a20
+
+	measure 'High Risk %' = DIVIDE ( [High Risk Count], [Employees Scored] )
+		formatString: 0.00%
+		lineageTag: 14de0b6e-eb64-5030-860d-275f4015cd52
+
+	measure 'Avg Risk Score' = AVERAGE ( risk_scores[attrition_probability] )
+		formatString: 0.000
+		lineageTag: 596ce73a-890e-5477-865a-c1d949d8f2c2
+
+	measure 'Selected Hike' = SELECTEDVALUE ( 'Salary Hike %'[Salary Hike %], 0 )
+		formatString: 0
+		lineageTag: 62b67716-661e-527e-b69c-479fc544af30
+
+	measure 'Baseline Mean Risk' =
+			CALCULATE (
+			    AVERAGE ( hike_simulation[attrition_probability] ),
+			    hike_simulation[hike_pct] = 0
+			)
+		formatString: 0.000
+		lineageTag: c1e2be9b-5b13-5dd7-9486-f7aa4f4d8855
+
+	measure 'Mean Risk After Hike' =
+			VAR H = [Selected Hike]
+			RETURN
+			CALCULATE (
+			    AVERAGE ( hike_simulation[attrition_probability] ),
+			    hike_simulation[hike_pct] = H
+			)
+		formatString: 0.000
+		lineageTag: 26d57239-78ec-57a6-85de-fca0cbfadc5f
+
+	measure 'Risk Change' = [Mean Risk After Hike] - [Baseline Mean Risk]
+		formatString: 0.000
+		lineageTag: 58b81347-0f1b-5a0d-9eb3-6413a0a8c339
+
+	measure 'High Risk After Hike' =
+			VAR H = [Selected Hike]
+			RETURN
+			CALCULATE (
+			    DISTINCTCOUNT ( hike_simulation[employee_number] ),
+			    hike_simulation[hike_pct] = H,
+			    hike_simulation[attrition_probability] > 0.6
+			)
+		formatString: 0
+		lineageTag: 8ab68fab-b8cd-5b92-85a2-e56342fd9d78
+
+	measure 'Employees Whose Risk Rises' =
+			VAR H = [Selected Hike]
+			VAR Scored =
+			    ADDCOLUMNS (
+			        VALUES ( hike_simulation[employee_number] ),
+			        "@Base",  CALCULATE ( AVERAGE ( hike_simulation[attrition_probability] ),
+			                              hike_simulation[hike_pct] = 0 ),
+			        "@After", CALCULATE ( AVERAGE ( hike_simulation[attrition_probability] ),
+			                              hike_simulation[hike_pct] = H )
+			    )
+			RETURN
+			COALESCE ( COUNTROWS ( FILTER ( Scored, [@After] > [@Base] + 0.0005 ) ), 0 )
+		formatString: #,##0
+		lineageTag: bf52ca26-48cd-5917-b159-420dd344264b
+
+	measure 'Mean Risk by Hike Level' = AVERAGE ( hike_simulation[attrition_probability] )
+		formatString: 0.000
+		lineageTag: 40b80ef8-80f6-5eef-adee-d740b0e2cdc2
+
+	column Column1
+		dataType: string
+		isHidden
+		lineageTag: 2572de03-c0e7-509b-88b3-74f69d526133
+		summarizeBy: none
+		sourceColumn: Column1
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = m
+		mode: import
+		source =
+				let
+				  Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i44FAA==", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [Column1 = _t])
+				in
+				  Source
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table

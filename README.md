@@ -1,8 +1,8 @@
 # 👥 HR Analytics — Employee Attrition Analysis & Prediction
 
-**Tools:** Python (pandas, scikit-learn) · MySQL · SQL (CTEs, window functions) · Streamlit · Plotly
+**Tools:** Python (pandas, scikit-learn) · MySQL · SQL (CTEs, window functions) · Streamlit · Plotly · Power BI (PBIP/TMDL, DAX)
 
-An end-to-end HR analytics project on the **IBM HR Analytics Employee Attrition** dataset — **1,470 employees, 35 attributes**. The data is loaded into MySQL and interrogated with 12 analytical SQL queries, a class-balanced Random Forest scores every current employee's risk of leaving, and a 3-page Streamlit dashboard turns both into something an HR team could act on — including a salary-hike simulation that genuinely re-runs the model.
+An end-to-end HR analytics project on the **IBM HR Analytics Employee Attrition** dataset — **1,470 employees, 35 attributes**. The data is loaded into MySQL and interrogated with 12 analytical SQL queries, a class-balanced Random Forest scores every current employee's risk of leaving, and the results are presented two ways — a 3-page Streamlit dashboard and the same three pages rebuilt in Power BI — including a salary-hike simulation that genuinely re-runs the model.
 
 ---
 
@@ -31,7 +31,7 @@ Re-scoring every employee with `MonthlyIncome` raised 30% moves mean predicted r
 
 ---
 
-## 📊 The Dashboard
+## 📊 The Dashboard — Streamlit
 
 Three pages. Pages 1–2 read aggregates live from MySQL; page 3 reads the model's out-of-fold scores. Every figure traces to a query in `attrition_analysis.sql` and a recorded number in `notes/key-numbers.md`.
 
@@ -43,6 +43,39 @@ Three pages. Pages 1–2 read aggregates live from MySQL; page 3 reads the model
 
 ### 3. At-Risk Employees
 ![At-Risk Employees](dashboard/docs/screenshots/3-at-risk-employees.jpg)
+
+---
+
+## 📊 The Same Three Pages — Power BI
+
+The same analysis rebuilt as a Power BI semantic model and report: **3 pages, 28 visuals, 21 DAX measures**, checked into `powerbi/` as PBIP (TMDL + report JSON) so the model is reviewable as text rather than a binary `.pbix`.
+
+The model imports the same three CSVs the Streamlit build reads — the snake-cased `employees` export, `employee_risk_scores.csv`, and `hike_simulation.csv` — so both dashboards land on the same numbers from the same pipeline.
+
+### 1. Attrition Overview
+![Attrition Overview — Power BI](powerbi/docs/screenshots/1-attrition-overview.png)
+
+### 2. Risk Factors
+![Risk Factors — Power BI](powerbi/docs/screenshots/2-risk-factors.png)
+
+### 3. At-Risk Employees
+![At-Risk Employees — Power BI](powerbi/docs/screenshots/3-at-risk-employees.png)
+
+**The what-if is a disconnected slicer, not a calculated column.** `Salary Hike %` is a standalone table with no relationship to anything. `Selected Hike = SELECTEDVALUE ( 'Salary Hike %'[Salary Hike %], 0 )` picks the level, and `Mean Risk After Hike` averages `hike_simulation` at that level — so the DAX reads the Python simulation's stored grid rather than re-deriving it with a fudge factor.
+
+**Why the screenshot shows `Risk Change 0.000`.** With nothing selected, `SELECTEDVALUE` falls back to `0` — the baseline, where "after hike" *is* "before hike". Selecting 15% gives **Risk Change −0.003, mean risk 0.252, 478 employees whose risk rises**, matching `hike_simulation.csv` row for row.
+
+That last number is the one worth reading. The mean falls at every hike level, but the movement is not one-directional — at 15%, **478 employees score *higher* than baseline while 652 score lower**:
+
+| Hike | Mean risk | Risk rises | Risk falls |
+|---|---|---|---|
+| 0% | 0.2555 | — | — |
+| 15% | 0.2521 | 478 | 652 |
+| 30% | 0.2490 | 482 | 710 |
+
+A blanket raise is not a uniform retention lever, and a headline mean of −0.003 hides that. This is the same directional-not-causal caveat as the Streamlit build — see *Why the what-if re-runs the model instead of approximating it* below.
+
+> **To refresh the model**, repoint the partitions. The three tables in `powerbi/hr-dashboard.SemanticModel/definition/tables/` load from `C:\Users\alok\Desktop\hr\` — the path they were built against. Edit the `File.Contents(...)` path in each `.tmdl` partition, or set the source in Power Query, before hitting Refresh.
 
 ---
 
@@ -89,6 +122,7 @@ They rank high because Gini importance is biased toward high-cardinality continu
 | Database & analysis | MySQL, SQLAlchemy, 12 analytical SQL queries (CTEs, `NTILE`, `RANK`, window-function medians) |
 | Predictive modeling | scikit-learn — class-balanced Random Forest, stratified K-fold, out-of-fold scoring, ROC-AUC |
 | Visualization | Streamlit, Plotly — 3-page interactive dashboard with a model-backed what-if simulation |
+| BI & semantic modeling | Power BI Desktop — PBIP/TMDL semantic model, 21 DAX measures, disconnected-table what-if, star-schema relationships |
 | Version control | Git & GitHub |
 
 ---
@@ -108,10 +142,15 @@ hr-attrition-analytics/
 │   └── query-results.txt            # Raw output of all 12 queries
 ├── outputs/                         # Generated — model scores and EDA charts
 ├── .streamlit/config.toml
-└── dashboard/
-    ├── app.py                       # 3 pages
-    ├── queries.py                   # Every figure, aggregated in MySQL
-    ├── theme.py                     # Shared colours and chart styling
+├── dashboard/
+│   ├── app.py                       # 3 pages
+│   ├── queries.py                   # Every figure, aggregated in MySQL
+│   ├── theme.py                     # Shared colours and chart styling
+│   └── docs/screenshots/
+└── powerbi/                         # PBIP — open hr-dashboard.pbip in Power BI Desktop
+    ├── hr-dashboard.pbip
+    ├── hr-dashboard.SemanticModel/  # TMDL — tables, relationships, 21 DAX measures
+    ├── hr-dashboard.Report/         # 3 pages, 28 visuals, as JSON
     └── docs/screenshots/
 ```
 
@@ -125,6 +164,7 @@ hr-attrition-analytics/
 4. **Model (Python)** — One-hot encode, train a class-balanced Random Forest (300 trees, `max_depth=10`), evaluate on a stratified 20% holdout, then score every current employee out-of-fold.
 5. **Simulate (Python)** — Re-score each employee's held-out fold at seven salary-hike levels, 0–30%.
 6. **Visualize (Streamlit)** — Aggregate in MySQL, render with Plotly, read model outputs from `outputs/`.
+7. **Visualize (Power BI)** — Import the same three CSVs into a TMDL semantic model, aggregate in DAX, drive the what-if from a disconnected `Salary Hike %` table.
 
 ### Two population sizes appear, and both are correct
 
@@ -153,6 +193,8 @@ streamlit run dashboard/app.py                           # open the dashboard
 
 Individual pages are linkable — `?page=Risk+Factors`, `?page=At-Risk+Employees`.
 
+For the Power BI build, open `powerbi/hr-dashboard.pbip` in Power BI Desktop. It opens against the committed TMDL model; repoint the three partitions (see the note above) before refreshing.
+
 ---
 
 ## ✅ Reconciliation
@@ -166,9 +208,18 @@ Independent checks that also pass:
 - Income and tenure gradients are monotonic across all four buckets, in both directions
 - The simulation's +0% column reproduces the exported out-of-fold scores to the last decimal — asserted in `02_prediction_model.py`, so the two cannot silently drift apart
 
+The Power BI build was reconciled against the same source, independently of the Streamlit one — every KPI on its three pages matches the CSVs exactly:
+
+| Power BI card | Reads | Source figure |
+|---|---|---|
+| Headcount / Leavers / Attrition % / Avg Tenure | 1,470 · 237 · 16.12% · 7.0 | 1,470 · 237 · 16.1224% · 7.01 |
+| Attrition % — Overtime / No Overtime / Risk Multiple | 30.53% · 10.44% · 2.93 | 30.5288% · 10.4364% · 2.9252 |
+| Employees Scored / High Risk Count / High Risk % | 1,233 · 22 · 1.78% | 1,233 · 22 · 1.7843% |
+| Mean Risk After Hike @ 15% / Risk Change / Risk Rises | 0.252 · −0.003 · 478 | 0.2521 · −0.0034 · 478 |
+
 ---
 
 ## 👤 Author
 
-**Alok Kumar Ojha** — Data Analyst | Python · SQL · Streamlit
+**Alok Kumar Ojha** — Data Analyst | Python · SQL · Power BI · Streamlit
 Connect on [LinkedIn](https://linkedin.com/in/alok-kumar-ojha-450247176)

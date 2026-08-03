@@ -1,0 +1,17 @@
+table 'Salary Hike %'
+	lineageTag: 59a1731a-d474-5255-a6f0-c17123e7db1b
+
+	column 'Salary Hike %'
+		dataType: int64
+		formatString: 0
+		lineageTag: ed055b29-3f1c-5122-a17d-f7844a77723a
+		summarizeBy: none
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Salary Hike %' = calculated
+		mode: import
+		source = GENERATESERIES(0, 30, 5)
+
+	annotation PBI_Id = 7f2a1c4b9e8d4a6fb3c5d7e9f1a2b3c4

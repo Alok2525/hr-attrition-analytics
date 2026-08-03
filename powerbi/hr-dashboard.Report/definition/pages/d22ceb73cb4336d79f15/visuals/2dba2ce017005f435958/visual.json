@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
+  "name": "2dba2ce017005f435958",
+  "position": {
+    "x": 994,
+    "y": 16,
+    "z": 4,
+    "height": 236,
+    "width": 270,
+    "tabOrder": 4
+  },
+  "visual": {
+    "visualType": "slicer",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Salary Hike %"
+                    }
+                  },
+                  "Property": "Salary Hike %"
+                }
+              },
+              "queryRef": "Salary Hike %.Salary Hike %",
+              "nativeQueryRef": "Salary Hike %"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

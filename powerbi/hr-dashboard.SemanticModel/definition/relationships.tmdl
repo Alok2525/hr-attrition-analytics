@@ -1,0 +1,8 @@
+relationship 182e2499-76f1-52ef-8c73-610608c61a38
+	fromColumn: risk_scores.employee_number
+	toColumn: employees.employee_number
+
+relationship f01abf05-c930-5911-8e7f-0c94c221fe4f
+	fromColumn: hike_simulation.employee_number
+	toColumn: employees.employee_number
+
