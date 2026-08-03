@@ -1,0 +1,176 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
+  "name": "ac1c31301d9801ee103c",
+  "position": {
+    "x": 16,
+    "y": 484,
+    "z": 10,
+    "height": 220,
+    "width": 1248,
+    "tabOrder": 10
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "risk_scores"
+                    }
+                  },
+                  "Property": "employee_number"
+                }
+              },
+              "queryRef": "risk_scores.employee_number",
+              "nativeQueryRef": "employee_number"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "risk_scores"
+                    }
+                  },
+                  "Property": "department"
+                }
+              },
+              "queryRef": "risk_scores.department",
+              "nativeQueryRef": "department"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "risk_scores"
+                    }
+                  },
+                  "Property": "job_role"
+                }
+              },
+              "queryRef": "risk_scores.job_role",
+              "nativeQueryRef": "job_role"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "risk_scores"
+                    }
+                  },
+                  "Property": "over_time"
+                }
+              },
+              "queryRef": "risk_scores.over_time",
+              "nativeQueryRef": "over_time"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "risk_scores"
+                    }
+                  },
+                  "Property": "monthly_income"
+                }
+              },
+              "queryRef": "risk_scores.monthly_income",
+              "nativeQueryRef": "monthly_income"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "risk_scores"
+                    }
+                  },
+                  "Property": "years_at_company"
+                }
+              },
+              "queryRef": "risk_scores.years_at_company",
+              "nativeQueryRef": "years_at_company"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "risk_scores"
+                    }
+                  },
+                  "Property": "attrition_probability"
+                }
+              },
+              "queryRef": "risk_scores.attrition_probability",
+              "nativeQueryRef": "attrition_probability"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "risk_scores"
+                    }
+                  },
+                  "Property": "risk_band"
+                }
+              },
+              "queryRef": "risk_scores.risk_band",
+              "nativeQueryRef": "risk_band"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "risk_scores"
+                  }
+                },
+                "Property": "attrition_probability"
+              }
+            },
+            "direction": "Descending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Scored employees, highest risk first'"
+                }
+              }
+            },
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

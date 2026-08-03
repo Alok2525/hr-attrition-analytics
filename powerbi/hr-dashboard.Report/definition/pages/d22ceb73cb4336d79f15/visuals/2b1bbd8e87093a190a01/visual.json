@@ -1,0 +1,78 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
+  "name": "2b1bbd8e87093a190a01",
+  "position": {
+    "x": 16,
+    "y": 268,
+    "z": 9,
+    "height": 200,
+    "width": 1248,
+    "tabOrder": 9
+  },
+  "visual": {
+    "visualType": "lineChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "hike_simulation"
+                    }
+                  },
+                  "Property": "hike_pct"
+                }
+              },
+              "queryRef": "hike_simulation.hike_pct",
+              "nativeQueryRef": "hike_pct"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Mean Risk by Hike Level"
+                }
+              },
+              "queryRef": "_Measures.Mean Risk by Hike Level",
+              "nativeQueryRef": "Mean Risk by Hike Level"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Mean predicted risk across hike levels'"
+                }
+              }
+            },
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
