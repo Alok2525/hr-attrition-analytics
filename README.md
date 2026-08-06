@@ -46,6 +46,8 @@ The model imports the same three CSVs the pipeline produces — the snake-cased 
 ### 3. At-Risk Employees
 ![At-Risk Employees — Power BI](powerbi/docs/screenshots/3-at-risk-employees.png)
 
+**The table is formatted to be read at a glance, not scrolled.** `attrition_probability` carries data bars and `risk_band` is colour-banded, so the shape of the risk distribution is visible without reading a single number — and the two encode the same thing twice, deliberately, because a reader scanning for "who is in trouble" should not have to compare three-decimal probabilities by eye. The bar is drawn *behind* the value rather than beside it, so it uses a light blue: the theme's default is saturated enough that the top rows became black digits on solid colour.
+
 **The what-if is a disconnected slicer, not a calculated column.** `Salary Hike %` is a standalone table with no relationship to anything. `Selected Hike = SELECTEDVALUE ( 'Salary Hike %'[Salary Hike %], 0 )` picks the level, and `Mean Risk After Hike` averages `hike_simulation` at that level — so the DAX reads the Python simulation's stored grid rather than re-deriving it with a fudge factor.
 
 **Why the screenshot shows `Risk Change 0.000`.** With nothing selected, `SELECTEDVALUE` falls back to `0` — the baseline, where "after hike" *is* "before hike". Selecting 15% gives **Risk Change −0.003, mean risk 0.252, 478 employees whose risk rises**, matching `hike_simulation.csv` row for row.
